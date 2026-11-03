@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #4566ec;
+  --color-primary-dark: #26389b;
+  --color-primary-soft: #dde2fb;
+  --color-primary-tint: #eff2fe;
+  --color-danger: #e5484d;
+  --color-danger-tint: #ffe4e4;
+  --color-ink: #1c1c22;
+  --color-muted: #8e8e98;
+  --color-line: #e7e8ee;
+
+  --animate-sheet-up: sheet-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-pop: pop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-slate-100 font-sans text-ink antialiased;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-md border border-line bg-white px-3 py-3 text-sm text-ink outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15;
+  }
+  .field-error {
+    @apply border-danger focus:border-danger focus:ring-danger/15;
+  }
+  .label {
+    @apply mb-2 block text-xs font-medium text-muted;
+  }
+  .btn-primary {
+    @apply flex w-full items-center justify-center gap-2 rounded-md bg-primary py-3.5 text-sm font-medium text-white transition hover:bg-primary/90 active:scale-[0.99] disabled:opacity-60;
+  }
+  .icon-btn {
+    @apply grid size-10 place-items-center rounded-full text-ink transition hover:bg-slate-100 active:bg-slate-200;
+  }
+}
