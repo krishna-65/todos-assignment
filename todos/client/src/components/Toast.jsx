@@ -12,8 +12,9 @@ export default function Toast({ toast, onDismiss }) {
             type="button"
             className="font-semibold text-primary-soft hover:text-white"
             onClick={() => {
-              toast.action.onClick();
+              // Dismiss first so the action can show its own progress toast
               onDismiss();
+              toast.action.onClick();
             }}
           >
             {toast.action.label}

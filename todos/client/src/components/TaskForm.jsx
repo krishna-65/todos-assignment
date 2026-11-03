@@ -3,6 +3,7 @@ import { addHours, format, startOfHour } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { PRIORITY_STYLES } from './PriorityBadge';
+import Spinner from './Spinner';
 
 const SERVER_FIELD = { startAt: 'start', endAt: 'end' };
 
@@ -185,8 +186,9 @@ export default function TaskForm({ task, defaultDate }) {
 
       {formError && <p className="rounded-md bg-danger-tint px-3 py-2 text-sm text-danger">{formError}</p>}
 
-      <button type="submit" disabled={saving} className="btn-primary">
-        {saving ? 'Saving…' : task ? 'Save changes' : 'Create task'}
+      <button type="submit" disabled={saving} aria-busy={saving} className="btn-primary disabled:cursor-not-allowed">
+        {saving && <Spinner />}
+        {saving ? (task ? 'Saving…' : 'Creating…') : task ? 'Save changes' : 'Create task'}
       </button>
     </form>
   );

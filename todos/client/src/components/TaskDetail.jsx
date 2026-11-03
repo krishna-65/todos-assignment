@@ -3,10 +3,12 @@ import { CalendarDays, CheckCircle2, Circle, Clock, SquarePen, Trash2 } from 'lu
 import { useTasks } from '../context/TaskContext';
 import { timeRange } from '../lib/dates';
 import PriorityBadge from './PriorityBadge';
+import Spinner from './Spinner';
 
 export default function TaskDetail({ task }) {
-  const { toggleStatus, openEdit, deleteTask } = useTasks();
+  const { pending, toggleStatus, openEdit, deleteTask } = useTasks();
   const done = task.status === 'completed';
+  const busy = pending[task._id];
 
   return (
     <div className="space-y-5 pt-2">
@@ -49,23 +51,26 @@ export default function TaskDetail({ task }) {
       <button
         type="button"
         onClick={() => toggleStatus(task)}
-        className={`flex w-full items-center justify-center gap-2 rounded-md border py-3 text-sm font-medium transition ${
+        disabled={!!busy}
+        className={`flex w-full items-center justify-center gap-2 rounded-md border py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
           done ? 'border-line text-ink hover:bg-slate-50' : 'border-primary bg-primary-tint text-primary hover:bg-primary-soft'
         }`}
       >
-        {done ? <Circle size={17} /> : <CheckCircle2 size={17} />}
-        {done ? 'Mark as In Progress' : 'Mark as Completed'}
+        {busy === 'toggle' ? <Spinner size={17} /> : done ? <Circle size={17} /> : <CheckCircle2 size={17} />}
+        {busy === 'toggle' ? 'Updating…' : done ? 'Mark as In Progress' : 'Mark as Completed'}
       </button>
 
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => deleteTask(task)}
-          className="flex items-center justify-center gap-2 rounded-md bg-danger-tint py-3 text-sm font-medium text-danger transition hover:bg-red-100"
+          disabled={!!busy}
+          className="flex items-center justify-center gap-2 rounded-md bg-danger-tint py-3 text-sm font-medium text-danger transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <Trash2 size={16} /> Delete
+          {busy === 'delete' ? <Spinner /> : <Trash2 size={16} />}
+          {busy === 'delete' ? 'Deleting…' : 'Delete'}
         </button>
-        <button type="button" onClick={() => openEdit(task)} className="btn-primary">
+        <button type="button" onClick={() => openEdit(task)} disabled={!!busy} className="btn-primary">
           <SquarePen size={16} /> Edit
         </button>
       </div>

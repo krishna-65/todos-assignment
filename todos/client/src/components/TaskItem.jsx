@@ -5,11 +5,14 @@ import { useTasks } from '../context/TaskContext';
 import { timeRange } from '../lib/dates';
 import Checkbox from './Checkbox';
 import PriorityBadge from './PriorityBadge';
+import Spinner from './Spinner';
 
 const REVEAL = 88; // width of the swipe-to-delete action
 
-export default function TaskItem({ task, showDate = false }) {
-  const { toggleStatus, deleteTask, openEdit, openView } = useTasks();
+export default function TaskItem({ task: fetched, showDate = false }) {
+  const { pending, resolve, toggleStatus, deleteTask, openEdit, openView } = useTasks();
+  const task = resolve(fetched);
+  const busy = pending[task._id];
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const drag = useRef(null);
@@ -61,12 +64,13 @@ export default function TaskItem({ task, showDate = false }) {
       <button
         type="button"
         onClick={() => deleteTask(task)}
+        disabled={!!busy}
         tabIndex={offset ? 0 : -1}
         aria-hidden={!offset}
-        className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 bg-danger text-sm font-medium text-white"
+        className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 bg-danger text-sm font-medium text-white disabled:opacity-80"
         style={{ width: REVEAL }}
       >
-        <Trash2 size={16} /> Delete
+        {busy === 'delete' ? <Spinner /> : <Trash2 size={16} />} Delete
       </button>
 
       <div
@@ -79,13 +83,16 @@ export default function TaskItem({ task, showDate = false }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         style={{ transform: `translateX(${offset}px)`, touchAction: 'pan-y' }}
+        aria-busy={!!busy}
         className={`relative flex cursor-pointer select-none items-center gap-3.5 bg-white py-4 pr-1 outline-none focus-visible:bg-primary-tint/60 ${
           dragging ? '' : 'transition-transform duration-200'
-        }`}
+        } ${busy === 'delete' ? 'pointer-events-none opacity-50' : ''}`}
       >
         <Checkbox
           checked={done}
           onChange={() => toggleStatus(task)}
+          loading={busy === 'toggle'}
+          disabled={!!busy}
           label={done ? `Mark "${task.title}" as in progress` : `Mark "${task.title}" as completed`}
         />
 
@@ -110,10 +117,11 @@ export default function TaskItem({ task, showDate = false }) {
               e.stopPropagation();
               deleteTask(task);
             }}
-            className="grid size-9 place-items-center rounded-full transition hover:bg-red-50 hover:text-danger"
+            disabled={!!busy}
+            className="grid size-9 place-items-center rounded-full transition hover:bg-red-50 hover:text-danger disabled:cursor-not-allowed"
             aria-label={`Delete "${task.title}"`}
           >
-            <Trash2 size={19} strokeWidth={1.6} />
+            {busy === 'delete' ? <Spinner size={19} className="text-danger" /> : <Trash2 size={19} strokeWidth={1.6} />}
           </button>
           <button
             type="button"
@@ -121,7 +129,8 @@ export default function TaskItem({ task, showDate = false }) {
               e.stopPropagation();
               openEdit(task);
             }}
-            className="grid size-9 place-items-center rounded-full transition hover:bg-primary-tint hover:text-primary"
+            disabled={!!busy}
+            className="grid size-9 place-items-center rounded-full transition hover:bg-primary-tint hover:text-primary disabled:cursor-not-allowed"
             aria-label={`Edit "${task.title}"`}
           >
             <SquarePen size={19} strokeWidth={1.6} />

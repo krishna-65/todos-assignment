@@ -24,39 +24,73 @@ export function TaskProvider({ children }) {
     toastTimer.current = setTimeout(() => setToast(null), 4500);
   }, []);
 
+  // Task id -> request in flight ('toggle' | 'delete'). The ref mirrors it so double clicks are ignored synchronously.
+  const [pending, setPending] = useState({});
+  const pendingRef = useRef({});
+  const markPending = useCallback((id, action) => {
+    if (action) pendingRef.current[id] = action;
+    else delete pendingRef.current[id];
+    setPending({ ...pendingRef.current });
+  }, []);
+
+  // Server copies newer than what the lists last fetched, so a toggle shows before the refetch lands
+  const [latest, setLatest] = useState({});
+  const resolve = useCallback(
+    (task) => {
+      const newer = latest[task._id];
+      return newer && newer.updatedAt > task.updatedAt ? newer : task;
+    },
+    [latest],
+  );
+
   const toggleStatus = useCallback(
     async (task) => {
+      if (pendingRef.current[task._id]) return;
       const status = task.status === 'completed' ? 'in-progress' : 'completed';
+      markPending(task._id, 'toggle');
       try {
         const updated = await api.update(task._id, { status });
+        setLatest((l) => ({ ...l, [updated._id]: updated }));
         setSheet((s) => (s?.type === 'view' && s.task._id === task._id ? { ...s, task: updated } : s));
         refresh();
       } catch (e) {
         showToast(e.message);
+      } finally {
+        markPending(task._id, null);
       }
     },
-    [refresh, showToast],
+    [refresh, showToast, markPending],
   );
 
   const deleteTask = useCallback(
     async (task) => {
+      if (pendingRef.current[task._id]) return;
+      markPending(task._id, 'delete');
       try {
         await api.remove(task._id);
+        // The id stays marked so the row stays disabled until the refetch removes it
         setSheet(null);
         refresh();
         showToast('Task deleted', {
           label: 'Undo',
           onClick: async () => {
-            const { title, description, startAt, endAt, priority, status } = task;
-            await api.create({ title, description, startAt, endAt, priority, status });
-            refresh();
+            showToast('Restoring task…');
+            try {
+              const { title, description, startAt, endAt, priority, status } = task;
+              await api.create({ title, description, startAt, endAt, priority, status });
+              refresh();
+              showToast('Task restored');
+            } catch (e) {
+              showToast(e.message);
+            }
           },
         });
       } catch (e) {
+        markPending(task._id, null);
         showToast(e.message);
       }
     },
-    [refresh, showToast],
+    [refresh, showToast, markPending],
   );
 
   // Errors propagate so the form can show field messages
@@ -74,6 +108,8 @@ export function TaskProvider({ children }) {
   const value = useMemo(
     () => ({
       version,
+      pending,
+      resolve,
       toggleStatus,
       deleteTask,
       saveTask,
@@ -81,7 +117,7 @@ export function TaskProvider({ children }) {
       openEdit: (task) => setSheet({ type: 'form', task }),
       openView: (task) => setSheet({ type: 'view', task }),
     }),
-    [version, toggleStatus, deleteTask, saveTask],
+    [version, pending, resolve, toggleStatus, deleteTask, saveTask],
   );
 
   return (
